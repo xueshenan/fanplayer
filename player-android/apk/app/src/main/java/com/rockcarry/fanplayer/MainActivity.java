@@ -31,12 +31,17 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 
+import java.io.File;
+
 public class MainActivity extends Activity {
     private static final String TAG = "fanplayer";
     private static final String PLAYER_INIT_PARAMS = "video_hwaccel=1;init_timeout=2000;auto_reconnect=2000;audio_bufpktn=4;video_bufpktn=1;rtsp_transport=2;";
     private static final String PLAYER_SHARED_PREFS= "fanplayer_shared_prefs";
     private static final String KEY_PLAYER_OPEN_URL= "key_player_open_url";
-    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.0.148/video0";
+    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.10.67/live/stream1";
+
+//    private static final String DEF_PLAYER_OPEN_URL= "file:///storage/emulated/0/Download/goertek.h264";
+
     private MediaPlayer  mPlayer    = null;
     private playerView   mRoot      = null;
     private SurfaceView  mVideo     = null;
@@ -303,7 +308,8 @@ public class MainActivity extends Activity {
     };
 
     private String readPlayerOpenURL() {
-        return mSharedPrefs.getString(KEY_PLAYER_OPEN_URL, DEF_PLAYER_OPEN_URL);
+        return DEF_PLAYER_OPEN_URL;
+//        return mSharedPrefs.getString(KEY_PLAYER_OPEN_URL, DEF_PLAYER_OPEN_URL);
     }
 
     private void savePlayerOpenURL(String url) {
