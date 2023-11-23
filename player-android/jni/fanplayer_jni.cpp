@@ -6,6 +6,8 @@
 #include "adev.h"
 #include "vdev.h"
 
+const char *FAN_TAG = "fanplayer_jni";
+
 // this function defined in libavcodec/jni.h
 extern "C" int av_jni_set_java_vm(void *vm, void *log_ctx);
 
@@ -21,6 +23,9 @@ static jlong JNICALL nativeOpen(JNIEnv *env, jobject obj, jstring url, jobject j
     DO_USE_VAR(w);
     DO_USE_VAR(h);
 
+    const char *strurl = env->GetStringUTFChars(url, NULL);
+
+    __android_log_print(ANDROID_LOG_DEBUG, FAN_TAG, "call native open %s", strurl);
     PLAYER_INIT_PARAMS playerparams;
     memset(&playerparams, 0, sizeof(playerparams));
     if (params != NULL) {
@@ -29,7 +34,6 @@ static jlong JNICALL nativeOpen(JNIEnv *env, jobject obj, jstring url, jobject j
         env->ReleaseStringUTFChars(params, strparams);
     }
 
-    const char *strurl = env->GetStringUTFChars(url, NULL);
     jlong hplayer = (jlong)player_open((char*)strurl, obj, &playerparams);
     env->ReleaseStringUTFChars(url, strurl);
     return hplayer;
@@ -54,6 +58,7 @@ static void nativeClose(JNIEnv *env, jobject obj, jlong hplayer)
  */
 static void JNICALL nativePlay(JNIEnv *env, jobject obj, jlong hplayer)
 {
+    __android_log_print(ANDROID_LOG_DEBUG, FAN_TAG, "call native play function");
     DO_USE_VAR(env);
     DO_USE_VAR(obj);
     player_play((void*)hplayer);
@@ -141,7 +146,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM* vm, void* reserved)
 
     JNIEnv* env = NULL;
     if (vm->GetEnv((void**) &env, JNI_VERSION_1_4) != JNI_OK || !env) {
-        __android_log_print(ANDROID_LOG_ERROR, "fanplayer_jni", "ERROR: GetEnv failed\n");
+        __android_log_print(ANDROID_LOG_ERROR, FAN_TAG, "ERROR: GetEnv failed\n");
         return -1;
     }
 
