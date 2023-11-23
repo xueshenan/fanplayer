@@ -10,11 +10,16 @@ set -e
 # 3. ./build_fanplayer_jni.sh arm (arm, arm64, x86 or x86_64)
 #
 
-if [ x"$1" == x"" ]; then
-    ARCH=arm
-else
-    ARCH=$1
+ARCH=$1
+BUILD_DEPENDENCY=$2
+
+if [ -z "$ARCH" ]; then
+    echo "You must specific an architecture 'arm, arm64, x86, x86_64'."
+    exit 1
 fi
+
+echo "ARCH=$ARCH"
+echo "BUILD_DEPENDENCY=$BUILD_DEPENDENCY"
 
 case "$ARCH" in
 arm)
@@ -51,7 +56,7 @@ x86_64)
     ;;
 esac
 
-export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/$TOOLCHAIN_PATH/prebuilt/windows-x86_64/bin
+export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/$TOOLCHAIN_PATH/prebuilt/darwin-x86_64/bin
 export PKG_CONFIG_PATH=$PWD/_install/lib/pkgconfig:$PKG_CONFIG_PATH
 
 SYSROOT=$ANDROID_NDK_HOME/platforms/android-21/arch-$ARCH
@@ -59,102 +64,115 @@ PREFIX_DIR=$PWD/_install
 EXTRA_CFLAGS="-I$PREFIX_DIR/include -DANDROID -DNDEBUG -Os -ffast-math"
 EXTRA_LDFLAGS="-L$PREFIX_DIR/lib"
 
-#++ build openssl ++#
-if [ ! -d openssl ]; then
-    git clone https://github.com/openssl/openssl.git
-fi
-cd openssl
-git checkout .
-git checkout OpenSSL_1_1_1k
-./Configure no-shared $OPENSSL_TARGET -D__ANDROID_API__=21 --prefix=$PREFIX_DIR
-make -j2 && make install_sw
-cd -
-#-- build openssl --#
+function build_dependency()
+{
+    #++ build openssl ++#
+    echo "begin build openssl"
+    if [ ! -d openssl ]; then
+        git clone https://github.com/openssl/openssl.git
+    fi
+    cd openssl
+    git checkout .
+    git checkout OpenSSL_1_1_1k
+    ./Configure no-shared $OPENSSL_TARGET -D__ANDROID_API__=21 --prefix=$PREFIX_DIR
+    make -j4 && make install_sw
+    cd -
+    echo "end build openssl"
+    #-- build openssl --#
 
-#++ build soundtouch ++#
-if [ ! -d soundtouch ]; then
-    git clone https://github.com/rockcarry/soundtouch.git
-fi
-cd soundtouch
-echo "#define SOUNDTOUCH_FLOAT_SAMPLES 1" > $PWD/include/soundtouch_config.h
-${CROSS_PREFIX}gcc --sysroot=$SYSROOT -fvisibility=hidden -fdata-sections -ffunction-sections -c \
--I$ANDROID_NDK_HOME/sources/cxx-stl/stlport/stlport -I$PWD/include -I$PWD/source/Android-lib/jni \
-$PWD/source/Android-lib/jni/soundtouch-lib.cpp \
-$PWD/source/SoundTouch/AAFilter.cpp \
-$PWD/source/SoundTouch/FIFOSampleBuffer.cpp \
-$PWD/source/SoundTouch/FIRFilter.cpp \
-$PWD/source/SoundTouch/cpu_detect_x86.cpp \
-$PWD/source/SoundTouch/sse_optimized.cpp \
-$PWD/source/SoundStretch/WavFile.cpp \
-$PWD/source/SoundTouch/RateTransposer.cpp \
-$PWD/source/SoundTouch/SoundTouch.cpp \
-$PWD/source/SoundTouch/InterpolateCubic.cpp \
-$PWD/source/SoundTouch/InterpolateLinear.cpp \
-$PWD/source/SoundTouch/InterpolateShannon.cpp \
-$PWD/source/SoundTouch/TDStretch.cpp \
-$PWD/source/SoundTouch/BPMDetect.cpp \
-$PWD/source/SoundTouch/PeakFinder.cpp
-${CROSS_PREFIX}ar rcs $PWD/libsoundtouch.a $PWD/*.o
-cp $PWD/libsoundtouch.a $PREFIX_DIR/lib
-cp $PWD/source/Android-lib/jni/soundtouch-lib.h $PREFIX_DIR/include/soundtouch.h
-cd -
-#-- build soundtouch --#
+    #++ build soundtouch ++#
+    echo "begin build soundtouch"
+    if [ ! -d soundtouch ]; then
+        git clone https://github.com/rockcarry/soundtouch.git
+    fi
+    cd soundtouch
+    echo "#define SOUNDTOUCH_FLOAT_SAMPLES 1" > $PWD/include/soundtouch_config.h
+    ${CROSS_PREFIX}gcc --sysroot=$SYSROOT -fvisibility=hidden -fdata-sections -ffunction-sections -c \
+    -I$ANDROID_NDK_HOME/sources/cxx-stl/stlport/stlport -I$PWD/include -I$PWD/source/Android-lib/jni \
+    $PWD/source/Android-lib/jni/soundtouch-lib.cpp \
+    $PWD/source/SoundTouch/AAFilter.cpp \
+    $PWD/source/SoundTouch/FIFOSampleBuffer.cpp \
+    $PWD/source/SoundTouch/FIRFilter.cpp \
+    $PWD/source/SoundTouch/cpu_detect_x86.cpp \
+    $PWD/source/SoundTouch/sse_optimized.cpp \
+    $PWD/source/SoundStretch/WavFile.cpp \
+    $PWD/source/SoundTouch/RateTransposer.cpp \
+    $PWD/source/SoundTouch/SoundTouch.cpp \
+    $PWD/source/SoundTouch/InterpolateCubic.cpp \
+    $PWD/source/SoundTouch/InterpolateLinear.cpp \
+    $PWD/source/SoundTouch/InterpolateShannon.cpp \
+    $PWD/source/SoundTouch/TDStretch.cpp \
+    $PWD/source/SoundTouch/BPMDetect.cpp \
+    $PWD/source/SoundTouch/PeakFinder.cpp
+    ${CROSS_PREFIX}ar rcs $PWD/libsoundtouch.a $PWD/*.o
+    cp $PWD/libsoundtouch.a $PREFIX_DIR/lib
+    cp $PWD/source/Android-lib/jni/soundtouch-lib.h $PREFIX_DIR/include/soundtouch.h
+    cd -
+    echo "end build soundtouch"
+    #-- build soundtouch --#
 
-#++ build ffmpeg ++#
-if [ ! -d ffmpeg ]; then
-  git clone -b fanplayer-n3.3.x https://github.com/rockcarry/ffmpeg
+    #++ build ffmpeg ++#
+    echo "begin build ffmpeg"
+    if [ ! -d ffmpeg ]; then
+      git clone -b fanplayer-n3.3.x https://github.com/rockcarry/ffmpeg
+    fi
+    cd ffmpeg
+    ./configure \
+    --pkg-config=pkg-config \
+    --arch=$ARCH \
+    --cpu=$CPU \
+    --target-os=android \
+    --enable-cross-compile \
+    --cross-prefix=$CROSS_PREFIX \
+    --sysroot=$SYSROOT \
+    --prefix=$PREFIX_DIR \
+    --enable-thumb \
+    --enable-static \
+    --enable-small \
+    --disable-shared \
+    --disable-symver \
+    --disable-debug \
+    --disable-programs \
+    --disable-doc \
+    --disable-postproc \
+    --disable-encoders \
+    --disable-muxers \
+    --disable-filters \
+    --disable-swscale-alpha \
+    --enable-encoder=mjpeg \
+    --enable-encoder=apng \
+    --enable-encoder=aac \
+    --enable-muxer=mjpeg \
+    --enable-muxer=apng \
+    --enable-muxer=mp4 \
+    --enable-muxer=flv \
+    --enable-muxer=avi \
+    --enable-filter=yadif \
+    --enable-filter=rotate \
+    --enable-asm \
+    --enable-gpl \
+    --enable-version3 \
+    --enable-nonfree \
+    --enable-openssl \
+    --enable-jni \
+    --enable-mediacodec \
+    --enable-decoder=h264_mediacodec \
+    --enable-decoder=hevc_mediacodec \
+    --enable-decoder=mpeg2_mediacodec \
+    --enable-decoder=mpeg4_mediacodec \
+    --enable-decoder=vp8_mediacodec \
+    --enable-decoder=vp9_mediacodec \
+    --extra-cflags="$EXTRA_CFLAGS" \
+    --extra-ldflags="$EXTRA_LDFLAGS"
+    make -j4 && make install
+    cd -
+    echo "end build ffmpeg"
+    #-- build ffmpeg --#
+}
+
+if [ "$BUILD_DEPENDENCY" -eq 1 ]; then
+    build_dependency
 fi
-cd ffmpeg
-./configure \
---pkg-config=pkg-config \
---arch=$ARCH \
---cpu=$CPU \
---target-os=android \
---enable-cross-compile \
---cross-prefix=$CROSS_PREFIX \
---sysroot=$SYSROOT \
---prefix=$PREFIX_DIR \
---enable-thumb \
---enable-static \
---enable-small \
---disable-shared \
---disable-symver \
---disable-debug \
---disable-programs \
---disable-doc \
---disable-postproc \
---disable-encoders \
---disable-muxers \
---disable-filters \
---disable-swscale-alpha \
---enable-encoder=mjpeg \
---enable-encoder=apng \
---enable-encoder=aac \
---enable-muxer=mjpeg \
---enable-muxer=apng \
---enable-muxer=mp4 \
---enable-muxer=flv \
---enable-muxer=avi \
---enable-filter=yadif \
---enable-filter=rotate \
---enable-asm \
---enable-gpl \
---enable-version3 \
---enable-nonfree \
---enable-openssl \
---enable-jni \
---enable-mediacodec \
---enable-decoder=h264_mediacodec \
---enable-decoder=hevc_mediacodec \
---enable-decoder=mpeg2_mediacodec \
---enable-decoder=mpeg4_mediacodec \
---enable-decoder=vp8_mediacodec \
---enable-decoder=vp9_mediacodec \
---extra-cflags="$EXTRA_CFLAGS" \
---extra-ldflags="$EXTRA_LDFLAGS"
-make -j2 && make install
-cd -
-#-- build ffmpeg --#
 
 #++ build fanplayer_jni ++#
 ${CROSS_PREFIX}gcc --sysroot=$SYSROOT -Wall -Wno-deprecated-declarations -fPIC -fno-strict-aliasing -shared -Os -o $PWD/libfanplayer_jni.so \
