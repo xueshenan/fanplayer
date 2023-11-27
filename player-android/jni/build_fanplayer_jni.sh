@@ -64,22 +64,8 @@ PREFIX_DIR=$PWD/_install
 EXTRA_CFLAGS="-I$PREFIX_DIR/include -DANDROID -DNDEBUG -Os -ffast-math"
 EXTRA_LDFLAGS="-L$PREFIX_DIR/lib"
 
-function build_dependency()
+function build_soundtouch()
 {
-    #++ build openssl ++#
-    echo "begin build openssl"
-    if [ ! -d openssl ]; then
-        git clone https://github.com/openssl/openssl.git
-    fi
-    cd openssl
-    git checkout .
-    git checkout OpenSSL_1_1_1k
-    ./Configure no-shared $OPENSSL_TARGET -D__ANDROID_API__=21 --prefix=$PREFIX_DIR
-    make -j4 && make install_sw
-    cd -
-    echo "end build openssl"
-    #-- build openssl --#
-
     #++ build soundtouch ++#
     echo "begin build soundtouch"
     if [ ! -d soundtouch ]; then
@@ -110,7 +96,26 @@ function build_dependency()
     cd -
     echo "end build soundtouch"
     #-- build soundtouch --#
+}
 
+function build_openssl() {
+    #++ build openssl ++#
+    echo "begin build openssl"
+    if [ ! -d openssl ]; then
+        git clone https://github.com/openssl/openssl.git
+    fi
+    cd openssl
+    git checkout .
+    git checkout OpenSSL_1_1_1k
+    ./Configure no-shared $OPENSSL_TARGET -D__ANDROID_API__=21 --prefix=$PREFIX_DIR
+    make -j4 && make install_sw
+    cd -
+    echo "end build openssl"
+    #-- build openssl --#
+}
+
+function build_ffmpeg()
+{
     #++ build ffmpeg ++#
     echo "begin build ffmpeg"
     if [ ! -d ffmpeg ]; then
@@ -170,6 +175,13 @@ function build_dependency()
     #-- build ffmpeg --#
 }
 
+function build_dependency()
+{
+    build_openssl
+    build_soundtouch
+    build_ffmpeg
+}
+
 if [ "$BUILD_DEPENDENCY" -eq 1 ]; then
     build_dependency
 fi
@@ -207,10 +219,11 @@ $PWD/_install/lib/libsoundtouch.a \
 $PWD/_install/lib/libssl.a \
 $PWD/_install/lib/libcrypto.a \
 -lstlport_static -lm -lz -llog -landroid
+
 ${CROSS_PREFIX}strip $PWD/libfanplayer_jni.so
+
 mkdir -p $PWD/../apk/app/src/main/jniLibs/$JNI_DIR
 mv $PWD/libfanplayer_jni.so $PWD/../apk/app/src/main/jniLibs/$JNI_DIR
-#-- build fanplayer_jni --#
 
-echo done
+echo " build fanplayer_jni complete"
 
