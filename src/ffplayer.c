@@ -721,11 +721,7 @@ static void *video_decode_thread_proc(void *param) {
             av_usleep(20 * 1000);
             continue;
         }
-        //-- when video decode pause --//
-
-        // some mp3 contain only one video frame
-        if (!packet && player->vframe.width && player->vframe.height && player->vframe.data)
-            render_video(player->render, &player->vframe);
+        //-- end when video decode pause --//
 
         // dequeue video packet
         if (!(packet = pktqueue_video_dequeue(player->pktqueue))) continue;
@@ -733,12 +729,16 @@ static void *video_decode_thread_proc(void *param) {
 
         //++ decode video packet ++//
         while (packet->size > 0 && !(player->status & (PS_V_PAUSE | PS_CLOSE))) {
-            int gotvideo = 0, consumed = avcodec_decode_video2(player->vcodec_context,
-                                                               &player->vframe, &gotvideo, packet);
+            int gotvideo = 0;
+            int consumed =
+                avcodec_decode_video2(player->vcodec_context, &player->vframe, &gotvideo, packet);
             ;
             if (consumed < 0) {
-                av_log(NULL, AV_LOG_WARNING, "an error occurred during decoding video.\n");
+                player_log(LOG_TYPE_WARNING, "an error occurred during decoding video.");
                 break;
+            }
+            if (consumed != packet->size) {
+                player_log(LOG_TYPE_DEBUG, "data not consume complete, need once more");
             }
             if (player->vcodec_context->width != player->init_params.video_vwidth ||
                 player->vcodec_context->height != player->init_params.video_vheight) {
@@ -754,36 +754,14 @@ static void *video_decode_thread_proc(void *param) {
                         ->width;  // when using dxva2 hardware hwaccel, the frame w&h
                                   // may incorrect, so we need fix it
                 player->vframe.height = player->vcodec_context->height;
-                vfilter_graph_input(player, &player->vframe);
-                do {
-                    // if (vfilter_graph_output(player, &player->vframe) < 0) break;
-                    // player->seek_vpts = av_frame_get_best_effort_timestamp(&player->vframe);
-                    //                  player->seek_vpts = player->vframe.pkt_dts; // if
-                    //                  rtmp has problem, try to use this code
-                    // player->vframe.pts =
-                    //     av_rescale_q(player->seek_vpts, player->vstream_timebase, TIMEBASE_MS);
-                    //++ for seek operation
-                    // if (player->status & PS_V_SEEK) {
-                    //     if (player->seek_dest - player->vframe.pts <= player->seek_diff) {
-                    //         player->cmnvars.start_tick = av_gettime_relative() / 1000;
-                    //         player->cmnvars.start_pts = player->vframe.pts;
-                    //         player->cmnvars.vpts = player->vframe.pts;
-                    //         player->cmnvars.apts =
-                    //             player->astream_index == -1 ? -1 : player->seek_dest;
-                    //         player_update_status(player, PS_V_SEEK, 0);
-                    //         if (player->status & PS_R_PAUSE) render_pause(player->render, 1);
-                    //     }
-                    // }
-                    cost_count++;
-                    //-- for seek operation
-                    // if (!(player->status & PS_V_SEEK))
-                    render_video(player->render, &player->vframe);
-                    if (cost_count % 20 == 0) {
-                        int64_t decode_time = GetTimeStamp() - player->vframe.pts;
-                        player_log(LOG_TYPE_DEBUG, "decoder time is %lldus", decode_time);
-                    }
-
-                } while (player->vfilter_graph);
+                cost_count++;
+                //-- for seek operation
+                // if (!(player->status & PS_V_SEEK))
+                render_video(player->render, &player->vframe);
+                if (cost_count % 20 == 0) {
+                    int64_t decode_time = GetTimeStamp() - player->vframe.pts;
+                    player_log(LOG_TYPE_DEBUG, "decoder time is %lldus", decode_time);
+                }
             }
 
             packet->data += packet->size;
@@ -821,7 +799,6 @@ static void *av_demux_thread_proc(void *param) {
                     player->init_params.auto_reconnect * 1000) {
                 player_update_status(player, 0, PS_RECONNECT);
             }
-            av_usleep(20 * 1000);
         } else {
             player->read_timelast = av_gettime_relative();
             // audio
