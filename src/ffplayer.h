@@ -12,15 +12,15 @@ extern "C" {
 
 // 常量定义
 // message
-#define MSG_FANPLAYER         (WM_APP + 1)
-#define MSG_OPEN_DONE         (('O' << 24) | ('P' << 16) | ('E' << 8) | ('N' << 0))
-#define MSG_OPEN_FAILED       (('F' << 24) | ('A' << 16) | ('I' << 8) | ('L' << 0))
-#define MSG_PLAY_COMPLETED    (('E' << 24) | ('N' << 16) | ('D' << 8) | (' ' << 0))
-#define MSG_TAKE_SNAPSHOT     (('S' << 24) | ('N' << 16) | ('A' << 8) | ('P' << 0))
-#define MSG_STREAM_CONNECTED  (('C' << 24) | ('N' << 16) | ('C' << 8) | ('T' << 0))
+#define MSG_FANPLAYER (WM_APP + 1)
+#define MSG_OPEN_DONE (('O' << 24) | ('P' << 16) | ('E' << 8) | ('N' << 0))
+#define MSG_OPEN_FAILED (('F' << 24) | ('A' << 16) | ('I' << 8) | ('L' << 0))
+#define MSG_PLAY_COMPLETED (('E' << 24) | ('N' << 16) | ('D' << 8) | (' ' << 0))
+#define MSG_TAKE_SNAPSHOT (('S' << 24) | ('N' << 16) | ('A' << 8) | ('P' << 0))
+#define MSG_STREAM_CONNECTED (('C' << 24) | ('N' << 16) | ('C' << 8) | ('T' << 0))
 #define MSG_STREAM_DISCONNECT (('D' << 24) | ('I' << 16) | ('S' << 8) | ('C' << 0))
-#define MSG_VIDEO_RESIZED     (('S' << 24) | ('I' << 16) | ('Z' << 8) | ('E' << 0))
-#define MSG_D3D_DEVICE_LOST   (('L' << 24) | ('O' << 16) | ('S' << 8) | ('T' << 0))
+#define MSG_VIDEO_RESIZED (('S' << 24) | ('I' << 16) | ('Z' << 8) | ('E' << 0))
+#define MSG_D3D_DEVICE_LOST (('L' << 24) | ('O' << 16) | ('S' << 8) | ('T' << 0))
 
 // adev render type
 enum {
@@ -121,10 +121,10 @@ enum {
 };
 
 enum {
-    AVSYNC_MODE_AUTO,  // 自动
-    AVSYNC_MODE_FILE,  // 文件播放模式
-    AVSYNC_MODE_LIVE_SYNC0, // 直播模式，放弃音视频同步
-    AVSYNC_MODE_LIVE_SYNC1, // 直播模式，做音视频同步
+    AVSYNC_MODE_AUTO,        // 自动
+    AVSYNC_MODE_FILE,        // 文件播放模式
+    AVSYNC_MODE_LIVE_SYNC0,  // 直播模式，放弃音视频同步
+    AVSYNC_MODE_LIVE_SYNC1,  // 直播模式，做音视频同步
 };
 
 // 初始化参数说明
@@ -135,57 +135,57 @@ enum {
 // 注意：v1.9.3 及以后的版本仅支持异步打开模式，调用 player_open 后须接收到 MSG_OPEN_DONE 消息以后，调用
 // 其他的接口函数才能正确执行。
 typedef struct {
-    int  video_vwidth;             // wr video actual width
-    int  video_vheight;            // wr video actual height
-    int  video_owidth;             // r  video output width  (after rotate)
-    int  video_oheight;            // r  video output height (after rotate)
-    int  video_frame_rate;         // wr 视频帧率
-    int  video_stream_total;       // r  视频流总数
-    int  video_stream_cur;         // wr 当前视频流
-    int  video_thread_count;       // wr 视频解码线程数
-    int  video_hwaccel;            // wr 视频硬解码使能
-    int  video_deinterlace;        // wr 视频反交错使能
-    int  video_rotate;             // wr 视频旋转角度
-    int  video_codecid;            // wr 视频解码器的 codecid
-    int  video_bufpktn;            // wr 视频 pkt 缓冲数
-    int  audio_channels;           // r  音频通道数
-    int  audio_sample_rate;        // r  音频采样率
-    int  audio_stream_total;       // r  音频流总数
-    int  audio_stream_cur;         // wr 当前音频流
-    int  audio_bufpktn;            // wr 音频 pkt 缓冲数
+    int video_vwidth;        // wr video actual width
+    int video_vheight;       // wr video actual height
+    int video_owidth;        // r  video output width  (after rotate)
+    int video_oheight;       // r  video output height (after rotate)
+    int video_frame_rate;    // wr 视频帧率
+    int video_stream_total;  // r  视频流总数
+    int video_stream_cur;    // wr 当前视频流
+    int video_thread_count;  // wr 视频解码线程数
+    int video_hwaccel;       // wr 视频硬解码使能
+    int video_deinterlace;   // wr 视频反交错使能
+    int video_rotate;        // wr 视频旋转角度
+    int video_codecid;       // wr 视频解码器的 codecid
+    int video_bufpktn;       // wr 视频 pkt 缓冲数
+    int audio_channels;      // r  音频通道数
+    int audio_sample_rate;   // r  音频采样率
+    int audio_stream_total;  // r  音频流总数
+    int audio_stream_cur;    // wr 当前音频流
+    int audio_bufpktn;       // wr 音频 pkt 缓冲数
 
-    int  subtitle_stream_total;    // r  字幕流总数
-    int  subtitle_stream_cur;      // wr 当前字幕流
+    int subtitle_stream_total;  // r  字幕流总数
+    int subtitle_stream_cur;    // wr 当前字幕流
 
-    int  vdev_render_type;         // w  vdev 类型
-    int  adev_render_type;         // w  adev 类型
+    int vdev_render_type;  // w  vdev 类型
+    int adev_render_type;  // w  adev 类型
 
-    int  init_timeout;             // w  播放器初始化超时，单位 ms，打开网络流媒体时设置用来防止卡死
-    int  open_autoplay;            // w  播放器打开后自动播放，不需要手动响应 MSG_OPEN_DONE 消息调用 player_play 接口函数
-    int  auto_reconnect;           // w  播放流媒体时自动重连的超时时间，毫秒为单位
-    int  rtsp_transport;           // w  rtsp 传输模式，0 - 自动，1 - udp，2 - tcp
-    int  avts_syncmode;            // wr 音视频时间戳同步模式，0 - 自动，1 - 文件播放模式，2 - 直播模式，做音视频同步，3 - 直播模式，放弃音视频同步
-    char filter_string[256];       // w  自定义的 video filter string
-    char ffrdp_tx_key[32];         // w  ffrdp 协议发送数据用到的 aes256 加密 key
-    char ffrdp_rx_key[32];         // w  ffrdp 协议接收数据用到的 aes256 解密 key
-    int  swscale_type;             // w  ffrender 使用的 swscale 图像缩放算法类型
-    int  waveout_device_id;        // w  指定 windows 平台 waveout 设备的 ID
+    int init_timeout;  // w  播放器初始化超时，单位 ms，打开网络流媒体时设置用来防止卡死
+    int open_autoplay;  // w  播放器打开后自动播放，不需要手动响应 MSG_OPEN_DONE 消息调用 player_play 接口函数
+    int auto_reconnect;  // w  播放流媒体时自动重连的超时时间，毫秒为单位
+    int rtsp_transport;  // w  rtsp 传输模式，0 - 自动，1 - udp，2 - tcp
+    int avts_syncmode;  // wr 音视频时间戳同步模式，0 - 自动，1 - 文件播放模式，2 - 直播模式，做音视频同步，3 - 直播模式，放弃音视频同步
+    char filter_string[256];  // w  自定义的 video filter string
+    char ffrdp_tx_key[32];    // w  ffrdp 协议发送数据用到的 aes256 加密 key
+    char ffrdp_rx_key[32];    // w  ffrdp 协议接收数据用到的 aes256 解密 key
+    int swscale_type;         // w  ffrender 使用的 swscale 图像缩放算法类型
+    int waveout_device_id;    // w  指定 windows 平台 waveout 设备的 ID
 } PLAYER_INIT_PARAMS;
 // video_stream_cur 和 audio_stream_cur 这两个参数，如果设置为 -1 可以禁止对应的解码动作
 // 应用场景：播放视频时，窗口退到后台，或者我只想听声音，可以将 video_stream_cur 设置为 -1
 //           这样播放器将只解码音频而不解码视频，可减少 cpu 的使用率
 
 //++ player common variables
-typedef struct { // for internal use only
+typedef struct {  // for internal use only
     PLAYER_INIT_PARAMS *init_params;
     int64_t start_time;
     int64_t start_tick;
-    int64_t start_pts ;
+    int64_t start_pts;
     int64_t apts;  // current apts
     int64_t vpts;  // current vpts
-    int     apktn; // available audio packet number in pktqueue
-    int     vpktn; // available video packet number in pktqueue
-    void   *winmsg;
+    int apktn;     // available audio packet number in pktqueue
+    int vpktn;     // available video packet number in pktqueue
+    void *winmsg;
 } CMNVARS;
 //-- player common variables
 
@@ -193,29 +193,40 @@ typedef struct { // for internal use only
 typedef struct {
     int srcx, srcy, srcw, srch;
     int dstx, dsty, dstw, dsth;
-    #define OVERLAY_COPY_BITBLT   1  // bitblt
-    #define OVERLAY_TRANSPARENT   2  // 透明色的 bitblt
-    #define OVERLAY_CONST_ALPHA   3  // 固定 alpha 值的透明混合
-    #define OVERLAY_PIXEL_ALPHA   4  // 逐像素点的透明混合
+#define OVERLAY_COPY_BITBLT 1  // bitblt
+#define OVERLAY_TRANSPARENT 2  // 透明色的 bitblt
+#define OVERLAY_CONST_ALPHA 3  // 固定 alpha 值的透明混合
+#define OVERLAY_PIXEL_ALPHA 4  // 逐像素点的透明混合
     int type, alpha, transparent;
 } RECTOVERLAY;
 #endif
 
+enum LOG_TYPE {
+    LOG_TYPE_DEBUG,
+    LOG_TYPE_INFO,
+    LOG_TYPE_WARNING,
+    LOG_TYPE_ERROR,
+    LOG_TYPE_FATAL,
+};
+
+void player_log(enum LOG_TYPE log_type, const char *fmt, ...);
+
 // 函数声明
-void* player_open    (char *file, void *appdata, PLAYER_INIT_PARAMS *params);
-void  player_close   (void *hplayer);
-void  player_play    (void *hplayer);
-void  player_pause   (void *hplayer);
-void  player_seek    (void *hplayer, int64_t ms, int type);
-void  player_setrect (void *hplayer, int type, int x, int y, int w, int h); // type: 0 - video rect, 1 - visual effect rect
-int   player_snapshot(void *hplayer, char *file, int w, int h, int waitt);
-int   player_record  (void *hplayer, char *file);
-void  player_setparam(void *hplayer, int id, void *param);
-void  player_getparam(void *hplayer, int id, void *param);
+void *player_open(char *file, void *appdata, PLAYER_INIT_PARAMS *params);
+void player_close(void *hplayer);
+void player_play(void *hplayer);
+void player_pause(void *hplayer);
+void player_seek(void *hplayer, int64_t ms, int type);
+void player_setrect(void *hplayer, int type, int x, int y, int w,
+                    int h);  // type: 0 - video rect, 1 - visual effect rect
+int player_snapshot(void *hplayer, char *file, int w, int h, int waitt);
+int player_record(void *hplayer, char *file);
+void player_setparam(void *hplayer, int id, void *param);
+void player_getparam(void *hplayer, int id, void *param);
 
 // internal helper function
-void  player_send_message(void *extra, int32_t msg, void *param);
-void  player_load_params (PLAYER_INIT_PARAMS *params, char *str);
+void player_send_message(void *extra, int32_t msg, void *param);
+void player_load_params(PLAYER_INIT_PARAMS *params, char *str);
 
 // 函数说明
 /*
@@ -358,6 +369,3 @@ player_open("dshow://video=Integrated Camera", hwnd, 0, 0, NULL); // 将以 dsho
 #endif
 
 #endif
-
-
-

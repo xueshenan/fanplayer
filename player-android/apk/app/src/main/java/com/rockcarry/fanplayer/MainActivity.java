@@ -35,11 +35,12 @@ import java.io.File;
 
 public class MainActivity extends Activity {
     private static final String TAG = "fanplayer";
-    private static final String PLAYER_INIT_PARAMS = "video_hwaccel=0;init_timeout=2000;auto_reconnect=2000;audio_bufpktn=4;video_bufpktn=1;rtsp_transport=1;";
+    private static final String PLAYER_INIT_PARAMS = "video_hwaccel=0;init_timeout=2000;auto_reconnect=2000;audio_bufpktn=4;video_bufpktn=1;rtsp_transport=1;avts_syncmode=2;";
     private static final String PLAYER_SHARED_PREFS= "fanplayer_shared_prefs";
     private static final String KEY_PLAYER_OPEN_URL= "key_player_open_url";
-    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.10.67/live/stream1";
+//    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.10.67/live/stream1";
 
+    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.10.194";
 //    private static final String DEF_PLAYER_OPEN_URL= "rtsp://192.168.10.67:8082";
 
 //    private static final String DEF_PLAYER_OPEN_URL = Uri.fromFile(new File("//assets/goertek.h264")).toString();

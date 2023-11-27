@@ -98,14 +98,6 @@ typedef struct {
 #endif
 } PLAYER;
 
-enum LOG_TYPE {
-    LOG_TYPE_DEBUG,
-    LOG_TYPE_INFO,
-    LOG_TYPE_WARNING,
-    LOG_TYPE_ERROR,
-    LOG_TYPE_FATAL,
-};
-
 #ifdef ANDROID
 static const char *F_TAG = "fanplayer";
 #endif
@@ -113,7 +105,13 @@ static const char *F_TAG = "fanplayer";
 // 内部常量定义
 static const AVRational TIMEBASE_MS = {1, 1000};
 
-static void player_log(enum LOG_TYPE log_type, const char *fmt, ...) {
+uint64_t GetTimeStamp() {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * (uint64_t)1000000 + tv.tv_usec;
+}
+
+void player_log(enum LOG_TYPE log_type, const char *fmt, ...) {
     va_list arglist;
     va_start(arglist, fmt);
 #ifdef WIN32
@@ -471,6 +469,7 @@ static int player_prepare_or_free(PLAYER *player, int prepare) {
         if (player->init_params.avts_syncmode == AVSYNC_MODE_AUTO)
             player->init_params.avts_syncmode = AVSYNC_MODE_FILE;
     }
+    player_log(LOG_TYPE_INFO, "av sync mode %d", player->init_params.avts_syncmode);
     if (player->init_params.video_vwidth != 0 && player->init_params.video_vheight != 0) {
         char vsize[64];
         sprintf(vsize, "%dx%d", player->init_params.video_vwidth,
@@ -713,6 +712,7 @@ static void *video_decode_thread_proc(void *param) {
     PLAYER *player = (PLAYER *)param;
     AVPacket *packet = NULL;
 
+    int cost_count = 0;
     while (!(player->status & PS_CLOSE)) {
         //++ when video decode pause ++//
         if (player->status & PS_V_PAUSE) {
@@ -756,27 +756,33 @@ static void *video_decode_thread_proc(void *param) {
                 player->vframe.height = player->vcodec_context->height;
                 vfilter_graph_input(player, &player->vframe);
                 do {
-                    if (vfilter_graph_output(player, &player->vframe) < 0) break;
-                    player->seek_vpts = av_frame_get_best_effort_timestamp(&player->vframe);
+                    // if (vfilter_graph_output(player, &player->vframe) < 0) break;
+                    // player->seek_vpts = av_frame_get_best_effort_timestamp(&player->vframe);
                     //                  player->seek_vpts = player->vframe.pkt_dts; // if
                     //                  rtmp has problem, try to use this code
-                    player->vframe.pts =
-                        av_rescale_q(player->seek_vpts, player->vstream_timebase, TIMEBASE_MS);
+                    // player->vframe.pts =
+                    //     av_rescale_q(player->seek_vpts, player->vstream_timebase, TIMEBASE_MS);
                     //++ for seek operation
-                    if (player->status & PS_V_SEEK) {
-                        if (player->seek_dest - player->vframe.pts <= player->seek_diff) {
-                            player->cmnvars.start_tick = av_gettime_relative() / 1000;
-                            player->cmnvars.start_pts = player->vframe.pts;
-                            player->cmnvars.vpts = player->vframe.pts;
-                            player->cmnvars.apts =
-                                player->astream_index == -1 ? -1 : player->seek_dest;
-                            player_update_status(player, PS_V_SEEK, 0);
-                            if (player->status & PS_R_PAUSE) render_pause(player->render, 1);
-                        }
-                    }
+                    // if (player->status & PS_V_SEEK) {
+                    //     if (player->seek_dest - player->vframe.pts <= player->seek_diff) {
+                    //         player->cmnvars.start_tick = av_gettime_relative() / 1000;
+                    //         player->cmnvars.start_pts = player->vframe.pts;
+                    //         player->cmnvars.vpts = player->vframe.pts;
+                    //         player->cmnvars.apts =
+                    //             player->astream_index == -1 ? -1 : player->seek_dest;
+                    //         player_update_status(player, PS_V_SEEK, 0);
+                    //         if (player->status & PS_R_PAUSE) render_pause(player->render, 1);
+                    //     }
+                    // }
+                    cost_count++;
                     //-- for seek operation
-                    if (!(player->status & PS_V_SEEK))
-                        render_video(player->render, &player->vframe);
+                    // if (!(player->status & PS_V_SEEK))
+                    render_video(player->render, &player->vframe);
+                    if (cost_count % 20 == 0) {
+                        int64_t decode_time = GetTimeStamp() - player->vframe.pts;
+                        player_log(LOG_TYPE_DEBUG, "decoder time is %lldus", decode_time);
+                    }
+
                 } while (player->vfilter_graph);
             }
 
@@ -826,6 +832,7 @@ static void *av_demux_thread_proc(void *param) {
 
             // video
             if (packet->stream_index == player->vstream_index) {
+                packet->pts = GetTimeStamp();
                 recorder_packet(player->recorder, packet);
                 pktqueue_video_enqueue(player->pktqueue, packet);
             }
