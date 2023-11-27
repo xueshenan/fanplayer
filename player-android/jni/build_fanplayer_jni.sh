@@ -21,32 +21,38 @@ fi
 echo "ARCH=$ARCH"
 echo "BUILD_DEPENDENCY=$BUILD_DEPENDENCY"
 
+ANDROID_SDK_VERSION=30
+echo "Android sdk version ${ANDROID_SDK_VERSION}"
+
+HOST_TARGET=darwin-x86_64
+echo "Host target is ${HOST_TARGET}"
+
 case "$ARCH" in
 arm)
     CPU=armv7-a
-    TOOLCHAIN_PATH=arm-linux-androideabi-4.9
-    CROSS_PREFIX=arm-linux-androideabi-
+    CROSS_PREFIX=armv7a-linux-androideabi
+    SYSROOT_PREFIX=arm-linux-androideabi
     OPENSSL_TARGET=android-arm
     JNI_DIR=armeabi-v7a
     ;;
 arm64)
     CPU=armv8-a
-    TOOLCHAIN_PATH=aarch64-linux-android-4.9
-    CROSS_PREFIX=aarch64-linux-android-
+    CROSS_PREFIX=aarch64-linux-android
+    SYSROOT_PREFIX=aarch64-linux-android
     OPENSSL_TARGET=android-arm64
     JNI_DIR=arm64-v8a
     ;;
 x86)
     CPU=i686
-    TOOLCHAIN_PATH=x86-4.9
-    CROSS_PREFIX=i686-linux-android-
+    CROSS_PREFIX=i686-linux-android
+    SYSROOT_PREFIX=i686-linux-android
     OPENSSL_TARGET=android-x86
     JNI_DIR=x86
     ;;
 x86_64)
     CPU=x86-64
-    TOOLCHAIN_PATH=x86_64-4.9
-    CROSS_PREFIX=x86_64-linux-android-
+    CROSS_PREFIX=x86_64-linux-android
+    SYSROOT_PREFIX=x86_64-linux-android
     OPENSSL_TARGET=android-x86_64
     JNI_DIR=x86_64
     ;;
@@ -56,12 +62,12 @@ x86_64)
     ;;
 esac
 
-export PATH=$PATH:$ANDROID_NDK_HOME/toolchains/$TOOLCHAIN_PATH/prebuilt/darwin-x86_64/bin
+export PATH=$PATH:$ANDROID_NDK/toolchains/llvm/prebuilt/${HOST_TARGET}/bin
 export PKG_CONFIG_PATH=$PWD/_install/lib/pkgconfig:$PKG_CONFIG_PATH
 
-SYSROOT=$ANDROID_NDK_HOME/platforms/android-21/arch-$ARCH
+SYSROOT=${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TARGET}/sysroot/
 PREFIX_DIR=$PWD/_install
-EXTRA_CFLAGS="-I$PREFIX_DIR/include -DANDROID -DNDEBUG -Os -ffast-math"
+EXTRA_CFLAGS="-I$PREFIX_DIR/include -DANDROID -DNDEBUG -Os -ffast-math -Wno-incompatible-function-pointer-types -Wl,-Bsymbolic"
 EXTRA_LDFLAGS="-L$PREFIX_DIR/lib"
 
 function build_soundtouch()
@@ -120,16 +126,17 @@ function build_ffmpeg()
     echo "begin build ffmpeg"
     if [ ! -d ffmpeg ]; then
       git clone -b fanplayer-n3.3.x https://github.com/rockcarry/ffmpeg
+      #git clone -b release/6.0 https://github.com/FFmpeg/FFmpeg
     fi
     cd ffmpeg
     ./configure \
     --pkg-config=pkg-config \
     --arch=$ARCH \
     --cpu=$CPU \
-    --target-os=android \
     --enable-cross-compile \
-    --cross-prefix=$CROSS_PREFIX \
-    --sysroot=$SYSROOT \
+    --target-os=android \
+    cc=${CROSS_PREFIX}${ANDROID_SDK_VERSION}-clang \
+    --cross-prefix=llvm- \
     --prefix=$PREFIX_DIR \
     --enable-thumb \
     --enable-static \
@@ -143,6 +150,7 @@ function build_ffmpeg()
     --disable-encoders \
     --disable-muxers \
     --disable-filters \
+    --disable-avdevice \
     --disable-swscale-alpha \
     --enable-encoder=mjpeg \
     --enable-encoder=apng \
@@ -154,7 +162,7 @@ function build_ffmpeg()
     --enable-muxer=avi \
     --enable-filter=yadif \
     --enable-filter=rotate \
-    --enable-asm \
+    --disable-asm \
     --enable-gpl \
     --enable-version3 \
     --enable-nonfree \
@@ -163,10 +171,6 @@ function build_ffmpeg()
     --enable-mediacodec \
     --enable-decoder=h264_mediacodec \
     --enable-decoder=hevc_mediacodec \
-    --enable-decoder=mpeg2_mediacodec \
-    --enable-decoder=mpeg4_mediacodec \
-    --enable-decoder=vp8_mediacodec \
-    --enable-decoder=vp9_mediacodec \
     --extra-cflags="$EXTRA_CFLAGS" \
     --extra-ldflags="$EXTRA_LDFLAGS"
     make -j4 && make install
@@ -177,8 +181,8 @@ function build_ffmpeg()
 
 function build_dependency()
 {
-    build_openssl
-    build_soundtouch
+    # build_openssl
+    # build_soundtouch
     build_ffmpeg
 }
 
@@ -186,10 +190,14 @@ if [ "$BUILD_DEPENDENCY" -eq 1 ]; then
     build_dependency
 fi
 
+
+echo "ANXS $SYSROOT"
 #++ build fanplayer_jni ++#
-${CROSS_PREFIX}gcc --sysroot=$SYSROOT -Wall -Wno-deprecated-declarations -fPIC -fno-strict-aliasing -shared -Os -o $PWD/libfanplayer_jni.so \
--I$ANDROID_NDK_HOME/sources/cxx-stl/stlport/stlport -I$PWD -I$PWD/_install/include -I$PWD/../../src -I$PWD/../../avkcpdemuxer -I$PWD/../../ffrdpdemuxer \
--L$ANDROID_NDK_HOME/sources/cxx-stl/stlport/libs/$JNI_DIR \
+${CROSS_PREFIX}${ANDROID_SDK_VERSION}-clang --sysroot=${SYSROOT} -Wall -Wno-deprecated-declarations -fPIC -fno-strict-aliasing -shared -Os -o $PWD/libfanplayer_jni.so \
+-I${ANDROID_NDK}/sources/cxx-stl/system/include -I${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TARGET}/sysroot/usr/include/ \
+-I${ANDROID_NDK}/toolchains/llvm/prebuilt/${HOST_TARGET}/sysroot/usr/include/${SYSROOT_PREFIX} \
+-I${PWD} -I${PWD}/_install/include -I${PWD}/../../src -I${PWD}/../../avkcpdemuxer -I${PWD}/../../ffrdpdemuxer \
+-L${SYSROOT}/usr/lib/${SYSROOT_PREFIX} \
 -DANDROID -DNDEBUG -DENABLE_AVKCP_SUPPORT -DENABLE_FFRDP_SUPPORT -DCONFIG_ENABLE_AES256 \
 $PWD/fanplayer_jni.cpp \
 $PWD/../../src/adev-android.cpp \
@@ -218,9 +226,9 @@ $PWD/_install/lib/libavutil.a \
 $PWD/_install/lib/libsoundtouch.a \
 $PWD/_install/lib/libssl.a \
 $PWD/_install/lib/libcrypto.a \
--lstlport_static -lm -lz -llog -landroid
+-lc++_static -lm -lz -llog -landroid
 
-${CROSS_PREFIX}strip $PWD/libfanplayer_jni.so
+llvm-strip $PWD/libfanplayer_jni.so
 
 mkdir -p $PWD/../apk/app/src/main/jniLibs/$JNI_DIR
 mv $PWD/libfanplayer_jni.so $PWD/../apk/app/src/main/jniLibs/$JNI_DIR
