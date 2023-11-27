@@ -43,7 +43,11 @@ static void vdev_android_lock(void *ctxt, uint8_t *buffer[8], int linesize[8], i
             c->win = NULL;
         }
         if (c->surface) c->win = ANativeWindow_fromSurface(get_jni_env(), (jobject)c->surface);
-        if (c->win) ANativeWindow_setBuffersGeometry(c->win, c->vw, c->vh, DEF_WIN_PIX_FMT);
+        if (c->win) {
+            ANativeWindow_setBuffersGeometry(c->win, c->vw, c->vh, DEF_WIN_PIX_FMT);
+            // ANativeWindow_setFrameRate(c->win, 120.0, 1);
+        }
+
         c->status &= ~VDEV_ANDROID_UPDATE_WIN;
     }
     if (c->win) {

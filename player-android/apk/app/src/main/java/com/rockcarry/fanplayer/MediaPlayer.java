@@ -7,6 +7,8 @@ import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 
+import static android.view.Surface.FRAME_RATE_COMPATIBILITY_FIXED_SOURCE;
+
 public final class MediaPlayer
 {
     public static final int MSG_OPEN_DONE           = (('O' << 24) | ('P' << 16) | ('E' << 8) | ('N' << 0));
@@ -63,7 +65,9 @@ public final class MediaPlayer
     }
 
     public void setDisplayTexture(SurfaceTexture texture) {
-        nativeSetDisplaySurface(m_hPlayer, new Surface(texture));
+        Surface surface = new Surface(texture);
+        surface.setFrameRate(120, FRAME_RATE_COMPATIBILITY_FIXED_SOURCE);
+        nativeSetDisplaySurface(m_hPlayer, surface);
     }
 
     public void setPlayerMsgHandler(Handler h) {
